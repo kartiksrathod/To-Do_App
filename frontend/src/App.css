@@ -798,7 +798,109 @@ div[style*="Made with"] {
   opacity: 0 !important;
 }
 
+/* Contact Footer */
+.contact-footer {
+  margin-top: 3rem;
+  padding: 2rem 0 1rem;
+  border-top: 2px solid var(--border-light);
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.footer-text {
+  text-align: center;
+}
+
+.footer-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.footer-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.footer-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.footer-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  border: 2px solid transparent;
+}
+
+.footer-link.linkedin {
+  background: linear-gradient(135deg, #0077b5 0%, #005582 100%);
+  color: white;
+}
+
+.footer-link.linkedin:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 119, 181, 0.3);
+  background: linear-gradient(135deg, #005582 0%, #0077b5 100%);
+}
+
+.footer-link.github {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 2px solid var(--border-medium);
+}
+
+.footer-link.github:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px var(--shadow-md);
+  border-color: var(--text-primary);
+  background: var(--hover-bg);
+}
+
+.footer-bottom {
+  text-align: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.footer-bottom p {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
 @media (max-width: 768px) {
+  .footer-links {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .footer-link {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .footer-title {
+    font-size: 1.25rem;
+  }
+}
   .todo-container {
     padding: 2rem 1.5rem;
   }
