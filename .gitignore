@@ -1,9 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# IDE and editors
-.idea/
-.vscode/
-
 # Dependencies
 node_modules/
 /node_modules
@@ -15,66 +9,95 @@ node_modules/
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+yarn.lock
 
 # Testing
 /coverage
-
-# Next.js
-/.next/
-/out/
-next-env.d.ts
-*.tsbuildinfo
+*.log
 
 # Production builds
 /build
+/dist
 dist/
-dist
+*.tsbuildinfo
 
-# Environment files (comprehensive coverage)
-
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 *token.json*
 *credentials.json*
 
-# Logs and debug files
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 dump.rdb
 
+# IDE and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
 # System files
 .DS_Store
 *.pem
+Thumbs.db
 
 # Python
 __pycache__/
-*pyc*
+*.py[cod]
+*$py.class
+*.so
 venv/
 .venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Development tools
-chainlit.md
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Archives
+*.zip
+*.tar.gz
+*.tar
+*.tgz
+*.rar
+*.7z
+
+# Build artifacts
+*.pack
+*.deb
+*.dylib
+
+# Development
 .chainlit
+chainlit.md
 .ipynb_checkpoints/
 .ac
 
 # Deployment
 .vercel
 
-# Data and databases
-agenthub/agents/youtube/db
-
-# Archive files and large assets
-**/*.zip
-**/*.tar.gz
-**/*.tar
-**/*.tgz
-*.pack
-*.deb
-*.dylib
-
-# Build caches
-.cache/
-
-# Mobile development
-android-sdk/ 
+# Emergent platform files (if using Emergent for deployment)
+.emergent/
+test_result.md
