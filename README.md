@@ -101,16 +101,16 @@ todo-app/
 └── README.md             # Project documentation
 ```
 
-## 🔌 API Endpoints
+## 💾 Data Storage
 
-### Tasks
-- `GET /api/tasks` - Get all tasks
-- `POST /api/tasks` - Create a new task
-- `PUT /api/tasks/{task_id}` - Update a task
-- `DELETE /api/tasks/{task_id}` - Delete a task
-- `DELETE /api/tasks/completed/batch` - Delete all completed tasks
-- `PUT /api/tasks/complete/batch` - Mark all tasks as complete
-- `PUT /api/tasks/reorder/batch` - Reorder tasks
+All tasks are stored locally in your browser using **localStorage**:
+
+- **Automatic Saving** - Changes are saved instantly as you work
+- **Persistent Data** - Tasks remain even after closing the browser
+- **Privacy** - Your data never leaves your device
+- **No Internet Required** - Works completely offline
+
+**Note:** Clearing browser data will delete your tasks. Consider exporting important tasks or using browser sync features.
 
 ## 🎮 Usage Guide
 
