@@ -1,6 +1,6 @@
 # 📝 Advanced To-Do List Application
 
-A modern, feature-rich task management application built with React, FastAPI, and MongoDB. Organize your tasks efficiently with priorities, categories, due dates, and subtasks.
+A modern, feature-rich task management application built with React and localStorage. Organize your tasks efficiently with priorities, categories, due dates, and subtasks - all stored locally in your browser.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![React](https://img.shields.io/badge/React-18.x-blue)
