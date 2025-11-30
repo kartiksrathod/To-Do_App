@@ -72,21 +72,14 @@ yarn install
 
 ## 🏃 Running the Application
 
-### Start Backend Server
-```bash
-cd backend
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
-```
-
-The backend API will be available at `http://localhost:8001`
-
-### Start Frontend Development Server
 ```bash
 cd frontend
 yarn start
 ```
 
-The application will open at `http://localhost:3000`
+The application will automatically open in your browser at `http://localhost:3000`
+
+That's it! No backend setup needed - everything runs in your browser.
 
 ## 📁 Project Structure
 
