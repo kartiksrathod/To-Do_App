@@ -49,9 +49,8 @@ A modern, feature-rich task management application built with React and localSto
 Before running this application, ensure you have:
 
 - **Node.js** (v16 or higher)
-- **Python** (v3.8 or higher)
-- **MongoDB** (v4.4 or higher) - Running locally or cloud instance
 - **Yarn** - Package manager
+- **Modern Web Browser** - Chrome, Firefox, Safari, or Edge
 
 ## 🚀 Installation
 
