@@ -152,37 +152,25 @@ function App() {
     setEditingText("");
   };
 
-  const saveEdit = async (taskId) => {
+  const saveEdit = (taskId) => {
     if (!editingText.trim()) {
       toast.error("Task cannot be empty");
       return;
     }
 
-    try {
-      await axios.put(`${API}/tasks/${taskId}`, { text: editingText });
-      setTasks(tasks.map(task => 
-        task.id === taskId ? { ...task, text: editingText } : task
-      ));
-      setEditingTaskId(null);
-      setEditingText("");
-      toast.success("Task updated");
-    } catch (e) {
-      console.error("Error updating task:", e);
-      toast.error("Failed to update task");
-    }
+    setTasks(tasks.map(task => 
+      task.id === taskId ? { ...task, text: editingText, updated_at: new Date().toISOString() } : task
+    ));
+    setEditingTaskId(null);
+    setEditingText("");
+    toast.success("Task updated");
   };
 
-  const updateTaskPriority = async (taskId, priority) => {
-    try {
-      await axios.put(`${API}/tasks/${taskId}`, { priority });
-      setTasks(tasks.map(task => 
-        task.id === taskId ? { ...task, priority } : task
-      ));
-      toast.success("Priority updated");
-    } catch (e) {
-      console.error("Error updating priority:", e);
-      toast.error("Failed to update priority");
-    }
+  const updateTaskPriority = (taskId, priority) => {
+    setTasks(tasks.map(task => 
+      task.id === taskId ? { ...task, priority, updated_at: new Date().toISOString() } : task
+    ));
+    toast.success("Priority updated");
   };
 
   const handleDragStart = (e, task) => {
