@@ -3,9 +3,8 @@
 A modern, feature-rich task management application built with React and localStorage. Organize your tasks efficiently with priorities, categories, due dates, and subtasks - all stored locally in your browser.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![React](https://img.shields.io/badge/React-18.x-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.x-green)
-![MongoDB](https://img.shields.io/badge/MongoDB-Latest-green)
+![React](https://img.shields.io/badge/React-19.x-blue)
+![localStorage](https://img.shields.io/badge/Storage-localStorage-orange)
 
 ## ✨ Features
 
