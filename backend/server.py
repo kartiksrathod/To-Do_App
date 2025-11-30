@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,7 +6,7 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from typing import List, Optional
 import uuid
 from datetime import datetime, timezone
 
@@ -27,44 +27,95 @@ api_router = APIRouter(prefix="/api")
 
 
 # Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
+class Task(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    text: str
+    completed: bool = False
+    order: int
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class TaskCreate(BaseModel):
+    text: str
 
-# Add your routes to the router instead of directly to app
+class TaskUpdate(BaseModel):
+    text: Optional[str] = None
+    completed: Optional[bool] = None
+    order: Optional[int] = None
+
+class TaskReorder(BaseModel):
+    task_ids: List[str]
+
+
+# Routes
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "To-Do List API"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
+@api_router.get("/tasks", response_model=List[Task])
+async def get_tasks():
+    tasks = await db.tasks.find({}, {"_id": 0}).to_list(1000)
     
     # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
+    for task in tasks:
+        if isinstance(task.get('created_at'), str):
+            task['created_at'] = datetime.fromisoformat(task['created_at'])
     
-    return status_checks
+    # Sort by order
+    tasks.sort(key=lambda x: x.get('order', 0))
+    return tasks
+
+@api_router.post("/tasks", response_model=Task)
+async def create_task(input: TaskCreate):
+    # Get current max order
+    existing_tasks = await db.tasks.find({}, {"_id": 0, "order": 1}).to_list(1000)
+    max_order = max([t.get('order', 0) for t in existing_tasks], default=-1)
+    
+    task_obj = Task(text=input.text, order=max_order + 1)
+    
+    # Convert to dict and serialize datetime to ISO string for MongoDB
+    doc = task_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.tasks.insert_one(doc)
+    return task_obj
+
+@api_router.put("/tasks/{task_id}", response_model=Task)
+async def update_task(task_id: str, input: TaskUpdate):
+    # Find existing task
+    existing_task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
+    if not existing_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Update fields
+    update_data = {k: v for k, v in input.model_dump().items() if v is not None}
+    
+    if update_data:
+        await db.tasks.update_one({"id": task_id}, {"$set": update_data})
+    
+    # Fetch updated task
+    updated_task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
+    if isinstance(updated_task.get('created_at'), str):
+        updated_task['created_at'] = datetime.fromisoformat(updated_task['created_at'])
+    
+    return Task(**updated_task)
+
+@api_router.delete("/tasks/{task_id}")
+async def delete_task(task_id: str):
+    result = await db.tasks.delete_one({"id": task_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"message": "Task deleted successfully"}
+
+@api_router.put("/tasks/reorder/batch")
+async def reorder_tasks(input: TaskReorder):
+    # Update order for each task
+    for idx, task_id in enumerate(input.task_ids):
+        await db.tasks.update_one({"id": task_id}, {"$set": {"order": idx}})
+    
+    return {"message": "Tasks reordered successfully"}
+
 
 # Include the router in the main app
 app.include_router(api_router)
