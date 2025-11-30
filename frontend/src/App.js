@@ -94,29 +94,30 @@ function App() {
     setFilteredTasks(filtered);
   };
 
-  const addTask = async () => {
+  const addTask = () => {
     if (!newTaskText.trim()) {
       toast.error("Please enter a task");
       return;
     }
 
-    try {
-      const response = await axios.post(`${API}/tasks`, { 
-        text: newTaskText,
-        priority: newTaskPriority,
-        category: newTaskCategory,
-        due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null
-      });
-      setTasks([...tasks, response.data]);
-      setNewTaskText("");
-      setNewTaskPriority("medium");
-      setNewTaskCategory(null);
-      setNewTaskDueDate(null);
-      toast.success("Task added!");
-    } catch (e) {
-      console.error("Error adding task:", e);
-      toast.error("Failed to add task");
-    }
+    const newTask = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      text: newTaskText,
+      completed: false,
+      priority: newTaskPriority,
+      category: newTaskCategory,
+      due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null,
+      order: tasks.length,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    setTasks([...tasks, newTask]);
+    setNewTaskText("");
+    setNewTaskPriority("medium");
+    setNewTaskCategory(null);
+    setNewTaskDueDate(null);
+    toast.success("Task added!");
   };
 
   const toggleTask = async (taskId, completed) => {
