@@ -144,10 +144,6 @@ All tasks are stored locally in your browser using **localStorage**:
 # Run frontend tests
 cd frontend
 yarn test
-
-# Run backend tests
-cd backend
-pytest
 ```
 
 ## 📦 Building for Production
