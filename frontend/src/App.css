@@ -887,20 +887,6 @@ div[style*="Made with"] {
 }
 
 @media (max-width: 768px) {
-  .footer-links {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .footer-link {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .footer-title {
-    font-size: 1.25rem;
-  }
-}
   .todo-container {
     padding: 2rem 1.5rem;
   }
@@ -944,5 +930,19 @@ div[style*="Made with"] {
 
   .subtasks-section {
     margin-left: 1rem;
+  }
+
+  .footer-links {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .footer-link {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .footer-title {
+    font-size: 1.25rem;
   }
 }
