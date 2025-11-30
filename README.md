@@ -148,7 +148,6 @@ yarn test
 
 ## 📦 Building for Production
 
-### Frontend Build
 ```bash
 cd frontend
 yarn build
@@ -156,11 +155,12 @@ yarn build
 
 The optimized production build will be in the `frontend/build` directory.
 
-### Backend Deployment
-For production, use a production-grade ASGI server:
-```bash
-gunicorn server:app -w 4 -k uvicorn.workers.UvicornWorker
-```
+You can deploy this to any static hosting service:
+- **Netlify** - Drag and drop the build folder
+- **Vercel** - Connect your repository
+- **GitHub Pages** - Host directly from GitHub
+- **AWS S3** - Simple static website hosting
+- **Any web server** - Just serve the build folder
 
 ## 🤝 Contributing
 
