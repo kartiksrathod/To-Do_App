@@ -1,23 +1,64 @@
 import { useState, useEffect } from "react";
 import "@/App.css";
 import axios from "axios";
-import { Plus, Trash2, GripVertical, Check } from "lucide-react";
+import { Plus, Trash2, GripVertical, Check, Search, Filter, MoreVertical, Calendar, AlertCircle, Edit2, X, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+const CATEGORIES = [
+  { value: "work", label: "Work", color: "#3b82f6" },
+  { value: "personal", label: "Personal", color: "#8b5cf6" },
+  { value: "shopping", label: "Shopping", color: "#ec4899" },
+  { value: "health", label: "Health", color: "#10b981" },
+  { value: "other", label: "Other", color: "#6b7280" },
+];
+
 function App() {
   const [tasks, setTasks] = useState([]);
+  const [filteredTasks, setFilteredTasks] = useState([]);
   const [newTaskText, setNewTaskText] = useState("");
+  const [newTaskPriority, setNewTaskPriority] = useState("medium");
+  const [newTaskCategory, setNewTaskCategory] = useState(null);
+  const [newTaskDueDate, setNewTaskDueDate] = useState(null);
   const [draggedTask, setDraggedTask] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all"); // all, active, completed
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [editingText, setEditingText] = useState("");
 
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  useEffect(() => {
+    filterTasks();
+  }, [tasks, filter, searchQuery]);
 
   const fetchTasks = async () => {
     try {
@@ -31,6 +72,26 @@ function App() {
     }
   };
 
+  const filterTasks = () => {
+    let filtered = [...tasks];
+
+    // Apply status filter
+    if (filter === "active") {
+      filtered = filtered.filter(t => !t.completed);
+    } else if (filter === "completed") {
+      filtered = filtered.filter(t => t.completed);
+    }
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(t => 
+        t.text.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredTasks(filtered);
+  };
+
   const addTask = async () => {
     if (!newTaskText.trim()) {
       toast.error("Please enter a task");
@@ -38,9 +99,17 @@ function App() {
     }
 
     try {
-      const response = await axios.post(`${API}/tasks`, { text: newTaskText });
+      const response = await axios.post(`${API}/tasks`, { 
+        text: newTaskText,
+        priority: newTaskPriority,
+        category: newTaskCategory,
+        due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null
+      });
       setTasks([...tasks, response.data]);
       setNewTaskText("");
+      setNewTaskPriority("medium");
+      setNewTaskCategory(null);
+      setNewTaskDueDate(null);
       toast.success("Task added!");
     } catch (e) {
       console.error("Error adding task:", e);
@@ -68,6 +137,71 @@ function App() {
     } catch (e) {
       console.error("Error deleting task:", e);
       toast.error("Failed to delete task");
+    }
+  };
+
+  const clearCompleted = async () => {
+    try {
+      await axios.delete(`${API}/tasks/completed/batch`);
+      setTasks(tasks.filter(task => !task.completed));
+      toast.success("Completed tasks cleared");
+    } catch (e) {
+      console.error("Error clearing completed:", e);
+      toast.error("Failed to clear completed tasks");
+    }
+  };
+
+  const markAllComplete = async () => {
+    try {
+      await axios.put(`${API}/tasks/complete/batch`);
+      setTasks(tasks.map(task => ({ ...task, completed: true })));
+      toast.success("All tasks marked complete");
+    } catch (e) {
+      console.error("Error marking all complete:", e);
+      toast.error("Failed to mark all complete");
+    }
+  };
+
+  const startEdit = (task) => {
+    setEditingTaskId(task.id);
+    setEditingText(task.text);
+  };
+
+  const cancelEdit = () => {
+    setEditingTaskId(null);
+    setEditingText("");
+  };
+
+  const saveEdit = async (taskId) => {
+    if (!editingText.trim()) {
+      toast.error("Task cannot be empty");
+      return;
+    }
+
+    try {
+      await axios.put(`${API}/tasks/${taskId}`, { text: editingText });
+      setTasks(tasks.map(task => 
+        task.id === taskId ? { ...task, text: editingText } : task
+      ));
+      setEditingTaskId(null);
+      setEditingText("");
+      toast.success("Task updated");
+    } catch (e) {
+      console.error("Error updating task:", e);
+      toast.error("Failed to update task");
+    }
+  };
+
+  const updateTaskPriority = async (taskId, priority) => {
+    try {
+      await axios.put(`${API}/tasks/${taskId}`, { priority });
+      setTasks(tasks.map(task => 
+        task.id === taskId ? { ...task, priority } : task
+      ));
+      toast.success("Priority updated");
+    } catch (e) {
+      console.error("Error updating priority:", e);
+      toast.error("Failed to update priority");
     }
   };
 
@@ -99,14 +233,13 @@ function App() {
     setTasks(newTasks);
     setDraggedTask(null);
 
-    // Update order in backend
     try {
       const taskIds = newTasks.map(t => t.id);
       await axios.put(`${API}/tasks/reorder/batch`, { task_ids: taskIds });
     } catch (e) {
       console.error("Error reordering tasks:", e);
       toast.error("Failed to reorder tasks");
-      fetchTasks(); // Revert to server state
+      fetchTasks();
     }
   };
 
@@ -116,6 +249,28 @@ function App() {
     }
   };
 
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case "high": return "#ef4444";
+      case "medium": return "#f59e0b";
+      case "low": return "#10b981";
+      default: return "#6b7280";
+    }
+  };
+
+  const getCategoryColor = (category) => {
+    const cat = CATEGORIES.find(c => c.value === category);
+    return cat ? cat.color : "#6b7280";
+  };
+
+  const isOverdue = (dueDate) => {
+    if (!dueDate) return false;
+    return new Date(dueDate) < new Date() && new Date(dueDate).toDateString() !== new Date().toDateString();
+  };
+
+  const activeCount = tasks.filter(t => !t.completed).length;
+  const completedCount = tasks.filter(t => t.completed).length;
+
   return (
     <div className="app-container">
       <div className="background-gradient"></div>
@@ -123,8 +278,36 @@ function App() {
       <div className="content-wrapper">
         <div className="todo-container">
           <div className="header-section">
-            <h1 className="main-title" data-testid="app-title">My Tasks</h1>
-            <p className="subtitle">Organize your day with drag & drop</p>
+            <div className="header-content">
+              <div>
+                <h1 className="main-title" data-testid="app-title">My Tasks</h1>
+                <p className="subtitle">Organize, prioritize, and achieve your goals</p>
+              </div>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="more-button" data-testid="more-actions-button">
+                    <MoreVertical size={20} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" data-testid="more-actions-menu">
+                  <DropdownMenuItem onClick={markAllComplete} data-testid="mark-all-complete">
+                    <CheckCircle2 className="mr-2" size={16} />
+                    Mark All Complete
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={clearCompleted} data-testid="clear-completed">
+                    <Trash2 className="mr-2" size={16} />
+                    Clear Completed
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled>
+                    <div className="keyboard-hint">
+                      <kbd>Enter</kbd> to add task
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           <div className="add-task-section">
@@ -138,14 +321,100 @@ function App() {
                 className="task-input"
                 data-testid="new-task-input"
               />
+              
+              <div className="task-options">
+                <Select value={newTaskPriority} onValueChange={setNewTaskPriority}>
+                  <SelectTrigger className="priority-select" data-testid="priority-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high" data-testid="priority-high">🔴 High</SelectItem>
+                    <SelectItem value="medium" data-testid="priority-medium">🟡 Medium</SelectItem>
+                    <SelectItem value="low" data-testid="priority-low">🟢 Low</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={newTaskCategory || "none"} onValueChange={(v) => setNewTaskCategory(v === "none" ? null : v)}>
+                  <SelectTrigger className="category-select" data-testid="category-select">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" data-testid="category-none">No Category</SelectItem>
+                    {CATEGORIES.map(cat => (
+                      <SelectItem key={cat.value} value={cat.value} data-testid={`category-${cat.value}`}>
+                        <span className="category-option">
+                          <span className="category-dot" style={{ background: cat.color }}></span>
+                          {cat.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="date-button" data-testid="due-date-picker">
+                      <Calendar size={16} />
+                      {newTaskDueDate ? format(newTaskDueDate, "MMM d") : "Due"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarPicker
+                      mode="single"
+                      selected={newTaskDueDate}
+                      onSelect={setNewTaskDueDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
               <Button 
                 onClick={addTask} 
                 className="add-button"
                 data-testid="add-task-button"
               >
                 <Plus className="icon" />
-                Add Task
+                Add
               </Button>
+            </div>
+          </div>
+
+          <div className="filters-section">
+            <div className="search-wrapper">
+              <Search size={18} className="search-icon" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tasks..."
+                className="search-input"
+                data-testid="search-input"
+              />
+            </div>
+
+            <div className="filter-buttons">
+              <button 
+                className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+                onClick={() => setFilter('all')}
+                data-testid="filter-all"
+              >
+                All ({tasks.length})
+              </button>
+              <button 
+                className={`filter-btn ${filter === 'active' ? 'active' : ''}`}
+                onClick={() => setFilter('active')}
+                data-testid="filter-active"
+              >
+                Active ({activeCount})
+              </button>
+              <button 
+                className={`filter-btn ${filter === 'completed' ? 'active' : ''}`}
+                onClick={() => setFilter('completed')}
+                data-testid="filter-completed"
+              >
+                Completed ({completedCount})
+              </button>
             </div>
           </div>
 
@@ -155,26 +424,37 @@ function App() {
                 <div className="spinner"></div>
                 <p>Loading tasks...</p>
               </div>
-            ) : tasks.length === 0 ? (
+            ) : filteredTasks.length === 0 ? (
               <div className="empty-state" data-testid="empty-state">
                 <div className="empty-icon">
                   <Check size={48} />
                 </div>
-                <h3>No tasks yet</h3>
-                <p>Add your first task to get started!</p>
+                <h3>No tasks found</h3>
+                <p>
+                  {searchQuery ? "Try a different search" : 
+                   filter === "completed" ? "No completed tasks yet" :
+                   filter === "active" ? "No active tasks" :
+                   "Add your first task to get started!"}
+                </p>
               </div>
             ) : (
               <div className="task-list" data-testid="task-list">
-                {tasks.map((task) => (
+                {filteredTasks.map((task) => (
                   <div
                     key={task.id}
-                    draggable
+                    draggable={!editingTaskId}
                     onDragStart={(e) => handleDragStart(e, task)}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, task)}
-                    className={`task-item ${task.completed ? 'completed' : ''} ${draggedTask?.id === task.id ? 'dragging' : ''}`}
+                    className={`task-item priority-${task.priority} ${task.completed ? 'completed' : ''} ${draggedTask?.id === task.id ? 'dragging' : ''}`}
                     data-testid={`task-item-${task.id}`}
                   >
+                    <div 
+                      className="priority-indicator" 
+                      style={{ background: getPriorityColor(task.priority) }}
+                      data-testid={`priority-indicator-${task.id}`}
+                    ></div>
+                    
                     <div className="drag-handle" data-testid={`drag-handle-${task.id}`}>
                       <GripVertical size={20} />
                     </div>
@@ -186,17 +466,90 @@ function App() {
                       data-testid={`task-checkbox-${task.id}`}
                     />
                     
-                    <span className="task-text" data-testid={`task-text-${task.id}`}>
-                      {task.text}
-                    </span>
+                    <div className="task-content">
+                      {editingTaskId === task.id ? (
+                        <div className="task-edit-wrapper">
+                          <input
+                            type="text"
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') saveEdit(task.id);
+                              if (e.key === 'Escape') cancelEdit();
+                            }}
+                            className="task-edit-input"
+                            autoFocus
+                            data-testid={`task-edit-input-${task.id}`}
+                          />
+                          <div className="edit-actions">
+                            <button onClick={() => saveEdit(task.id)} className="save-btn" data-testid={`save-edit-${task.id}`}>
+                              <Check size={16} />
+                            </button>
+                            <button onClick={cancelEdit} className="cancel-btn" data-testid={`cancel-edit-${task.id}`}>
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="task-main">
+                            <span className="task-text" data-testid={`task-text-${task.id}`}>
+                              {task.text}
+                            </span>
+                            <button 
+                              onClick={() => startEdit(task)} 
+                              className="edit-button"
+                              data-testid={`edit-task-${task.id}`}
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                          </div>
+                          
+                          <div className="task-meta">
+                            {task.category && (
+                              <span 
+                                className="task-category" 
+                                style={{ background: `${getCategoryColor(task.category)}20`, color: getCategoryColor(task.category) }}
+                                data-testid={`task-category-${task.id}`}
+                              >
+                                {CATEGORIES.find(c => c.value === task.category)?.label}
+                              </span>
+                            )}
+                            {task.due_date && (
+                              <span 
+                                className={`task-due-date ${isOverdue(task.due_date) ? 'overdue' : ''}`}
+                                data-testid={`task-due-date-${task.id}`}
+                              >
+                                {isOverdue(task.due_date) && <AlertCircle size={12} />}
+                                <Calendar size={12} />
+                                {format(new Date(task.due_date), "MMM d")}
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                     
-                    <button
-                      onClick={() => deleteTask(task.id)}
-                      className="delete-button"
-                      data-testid={`delete-task-${task.id}`}
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    <div className="task-actions">
+                      <Select value={task.priority} onValueChange={(v) => updateTaskPriority(task.id, v)}>
+                        <SelectTrigger className="priority-badge" data-testid={`task-priority-select-${task.id}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="high">🔴 High</SelectItem>
+                          <SelectItem value="medium">🟡 Medium</SelectItem>
+                          <SelectItem value="low">🟢 Low</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      
+                      <button
+                        onClick={() => deleteTask(task.id)}
+                        className="delete-button"
+                        data-testid={`delete-task-${task.id}`}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -205,9 +558,9 @@ function App() {
 
           {tasks.length > 0 && (
             <div className="footer-stats" data-testid="task-stats">
-              <span>{tasks.filter(t => !t.completed).length} active</span>
+              <span>{activeCount} active</span>
               <span>•</span>
-              <span>{tasks.filter(t => t.completed).length} completed</span>
+              <span>{completedCount} completed</span>
               <span>•</span>
               <span>{tasks.length} total</span>
             </div>

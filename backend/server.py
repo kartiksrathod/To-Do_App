@@ -33,15 +33,25 @@ class Task(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     text: str
     completed: bool = False
+    priority: str = "medium"  # low, medium, high
+    category: Optional[str] = None
+    due_date: Optional[str] = None
     order: int
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class TaskCreate(BaseModel):
     text: str
+    priority: Optional[str] = "medium"
+    category: Optional[str] = None
+    due_date: Optional[str] = None
 
 class TaskUpdate(BaseModel):
     text: Optional[str] = None
     completed: Optional[bool] = None
+    priority: Optional[str] = None
+    category: Optional[str] = None
+    due_date: Optional[str] = None
     order: Optional[int] = None
 
 class TaskReorder(BaseModel):
@@ -61,6 +71,8 @@ async def get_tasks():
     for task in tasks:
         if isinstance(task.get('created_at'), str):
             task['created_at'] = datetime.fromisoformat(task['created_at'])
+        if isinstance(task.get('updated_at'), str):
+            task['updated_at'] = datetime.fromisoformat(task['updated_at'])
     
     # Sort by order
     tasks.sort(key=lambda x: x.get('order', 0))
@@ -72,11 +84,14 @@ async def create_task(input: TaskCreate):
     existing_tasks = await db.tasks.find({}, {"_id": 0, "order": 1}).to_list(1000)
     max_order = max([t.get('order', 0) for t in existing_tasks], default=-1)
     
-    task_obj = Task(text=input.text, order=max_order + 1)
+    task_data = input.model_dump()
+    task_data['order'] = max_order + 1
+    task_obj = Task(**task_data)
     
     # Convert to dict and serialize datetime to ISO string for MongoDB
     doc = task_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
     
     await db.tasks.insert_one(doc)
     return task_obj
@@ -90,6 +105,7 @@ async def update_task(task_id: str, input: TaskUpdate):
     
     # Update fields
     update_data = {k: v for k, v in input.model_dump().items() if v is not None}
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     
     if update_data:
         await db.tasks.update_one({"id": task_id}, {"$set": update_data})
@@ -98,6 +114,8 @@ async def update_task(task_id: str, input: TaskUpdate):
     updated_task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
     if isinstance(updated_task.get('created_at'), str):
         updated_task['created_at'] = datetime.fromisoformat(updated_task['created_at'])
+    if isinstance(updated_task.get('updated_at'), str):
+        updated_task['updated_at'] = datetime.fromisoformat(updated_task['updated_at'])
     
     return Task(**updated_task)
 
@@ -107,6 +125,16 @@ async def delete_task(task_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task deleted successfully"}
+
+@api_router.delete("/tasks/completed/batch")
+async def delete_completed_tasks():
+    result = await db.tasks.delete_many({"completed": True})
+    return {"message": f"{result.deleted_count} completed tasks deleted"}
+
+@api_router.put("/tasks/complete/batch")
+async def complete_all_tasks():
+    result = await db.tasks.update_many({"completed": False}, {"$set": {"completed": True}})
+    return {"message": f"{result.modified_count} tasks marked as complete"}
 
 @api_router.put("/tasks/reorder/batch")
 async def reorder_tasks(input: TaskReorder):
