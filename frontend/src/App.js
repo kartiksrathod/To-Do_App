@@ -713,36 +713,26 @@ function App() {
 
         {/* Contact Footer */}
         <footer className="contact-footer">
-          <div className="footer-content">
-            <div className="footer-text">
-              <p className="footer-title">Let's Connect!</p>
-              <p className="footer-subtitle">Feel free to reach out or check out my work</p>
-            </div>
-            <div className="footer-links">
-              <a 
-                href="https://www.linkedin.com/in/kartik-s-rathod-a98364389/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="footer-link linkedin"
-                aria-label="LinkedIn Profile"
-              >
-                <Linkedin size={20} />
-                <span>LinkedIn</span>
-              </a>
-              <a 
-                href="https://github.com/kartiksrathod" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="footer-link github"
-                aria-label="GitHub Profile"
-              >
-                <Github size={20} />
-                <span>GitHub</span>
-              </a>
-            </div>
-          </div>
-          <div className="footer-bottom">
-            <p>© 2024 Kartik S Rathod • Built with React & FastAPI</p>
+          <p className="footer-made-by">Made by Kartik S Rathod</p>
+          <div className="footer-links">
+            <a 
+              href="https://www.linkedin.com/in/kartik-s-rathod-a98364389/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="footer-link"
+              aria-label="LinkedIn Profile"
+            >
+              <Linkedin size={18} />
+            </a>
+            <a 
+              href="https://github.com/kartiksrathod" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="footer-link"
+              aria-label="GitHub Profile"
+            >
+              <Github size={18} />
+            </a>
           </div>
         </footer>
       </div>
