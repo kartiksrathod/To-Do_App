@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "@/App.css";
-import { Plus, Trash2, GripVertical, Check, Search, MoreVertical, Calendar, AlertCircle, Edit2, X, CheckCircle2, Moon, Sun, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, GripVertical, Check, Search, MoreVertical, Calendar, AlertCircle, Edit2, X, CheckCircle2, Moon, Sun, ChevronDown, ChevronRight, Linkedin, Github, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
