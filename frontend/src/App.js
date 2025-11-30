@@ -183,7 +183,7 @@ function App() {
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = async (e, targetTask) => {
+  const handleDrop = (e, targetTask) => {
     e.preventDefault();
     
     if (!draggedTask || draggedTask.id === targetTask.id) {
@@ -198,17 +198,15 @@ function App() {
     newTasks.splice(draggedIndex, 1);
     newTasks.splice(targetIndex, 0, draggedTask);
 
-    setTasks(newTasks);
-    setDraggedTask(null);
+    // Update order property for all tasks
+    const reorderedTasks = newTasks.map((task, index) => ({
+      ...task,
+      order: index,
+      updated_at: new Date().toISOString()
+    }));
 
-    try {
-      const taskIds = newTasks.map(t => t.id);
-      await axios.put(`${API}/tasks/reorder/batch`, { task_ids: taskIds });
-    } catch (e) {
-      console.error("Error reordering tasks:", e);
-      toast.error("Failed to reorder tasks");
-      fetchTasks();
-    }
+    setTasks(reorderedTasks);
+    setDraggedTask(null);
   };
 
   const handleKeyPress = (e) => {
