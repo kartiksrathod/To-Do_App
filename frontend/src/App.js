@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import "@/App.css";
-import axios from "axios";
 import { Plus, Trash2, GripVertical, Check, Search, Filter, MoreVertical, Calendar, AlertCircle, Edit2, X, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,8 +26,7 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+const STORAGE_KEY = "todo_tasks";
 
 const CATEGORIES = [
   { value: "work", label: "Work", color: "#3b82f6" },
