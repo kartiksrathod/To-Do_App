@@ -120,49 +120,26 @@ function App() {
     toast.success("Task added!");
   };
 
-  const toggleTask = async (taskId, completed) => {
-    try {
-      await axios.put(`${API}/tasks/${taskId}`, { completed: !completed });
-      setTasks(tasks.map(task => 
-        task.id === taskId ? { ...task, completed: !completed } : task
-      ));
-    } catch (e) {
-      console.error("Error updating task:", e);
-      toast.error("Failed to update task");
-    }
+  const toggleTask = (taskId, completed) => {
+    setTasks(tasks.map(task => 
+      task.id === taskId ? { ...task, completed: !completed, updated_at: new Date().toISOString() } : task
+    ));
   };
 
-  const deleteTask = async (taskId) => {
-    try {
-      await axios.delete(`${API}/tasks/${taskId}`);
-      setTasks(tasks.filter(task => task.id !== taskId));
-      toast.success("Task deleted");
-    } catch (e) {
-      console.error("Error deleting task:", e);
-      toast.error("Failed to delete task");
-    }
+  const deleteTask = (taskId) => {
+    setTasks(tasks.filter(task => task.id !== taskId));
+    toast.success("Task deleted");
   };
 
-  const clearCompleted = async () => {
-    try {
-      await axios.delete(`${API}/tasks/completed/batch`);
-      setTasks(tasks.filter(task => !task.completed));
-      toast.success("Completed tasks cleared");
-    } catch (e) {
-      console.error("Error clearing completed:", e);
-      toast.error("Failed to clear completed tasks");
-    }
+  const clearCompleted = () => {
+    const completedCount = tasks.filter(task => task.completed).length;
+    setTasks(tasks.filter(task => !task.completed));
+    toast.success(`${completedCount} completed task${completedCount !== 1 ? 's' : ''} cleared`);
   };
 
-  const markAllComplete = async () => {
-    try {
-      await axios.put(`${API}/tasks/complete/batch`);
-      setTasks(tasks.map(task => ({ ...task, completed: true })));
-      toast.success("All tasks marked complete");
-    } catch (e) {
-      console.error("Error marking all complete:", e);
-      toast.error("Failed to mark all complete");
-    }
+  const markAllComplete = () => {
+    setTasks(tasks.map(task => ({ ...task, completed: true, updated_at: new Date().toISOString() })));
+    toast.success("All tasks marked complete");
   };
 
   const startEdit = (task) => {
