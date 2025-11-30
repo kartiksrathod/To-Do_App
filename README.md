@@ -85,20 +85,18 @@ That's it! No backend setup needed - everything runs in your browser.
 
 ```
 todo-app/
-├── backend/                 # FastAPI backend
-│   ├── server.py           # Main API application
-│   ├── requirements.txt    # Python dependencies
-│   └── .env               # Environment variables
-├── frontend/               # React frontend
+├── frontend/               # React application
 │   ├── public/            # Static files
 │   ├── src/
-│   │   ├── components/    # React components
+│   │   ├── components/    # UI components (shadcn/ui)
+│   │   │   └── ui/       # Reusable UI components
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── lib/          # Utility functions
 │   │   ├── App.js        # Main application component
-│   │   ├── App.css       # Styling
+│   │   ├── App.css       # Custom styling
 │   │   └── index.js      # Entry point
 │   ├── package.json      # Node dependencies
-│   └── .env             # Environment variables
-├── tests/                 # Test files
+│   └── tailwind.config.js # Tailwind CSS configuration
 ├── .gitignore            # Git ignore rules
 └── README.md             # Project documentation
 ```
