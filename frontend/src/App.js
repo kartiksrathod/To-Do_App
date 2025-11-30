@@ -50,25 +50,29 @@ function App() {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editingText, setEditingText] = useState("");
 
+  // Load tasks from localStorage on mount
   useEffect(() => {
-    fetchTasks();
+    const savedTasks = localStorage.getItem(STORAGE_KEY);
+    if (savedTasks) {
+      try {
+        setTasks(JSON.parse(savedTasks));
+      } catch (e) {
+        console.error("Error loading tasks:", e);
+      }
+    }
+    setLoading(false);
   }, []);
+
+  // Save tasks to localStorage whenever they change
+  useEffect(() => {
+    if (!loading) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    }
+  }, [tasks, loading]);
 
   useEffect(() => {
     filterTasks();
   }, [tasks, filter, searchQuery]);
-
-  const fetchTasks = async () => {
-    try {
-      const response = await axios.get(`${API}/tasks`);
-      setTasks(response.data);
-      setLoading(false);
-    } catch (e) {
-      console.error("Error fetching tasks:", e);
-      toast.error("Failed to load tasks");
-      setLoading(false);
-    }
-  };
 
   const filterTasks = () => {
     let filtered = [...tasks];
