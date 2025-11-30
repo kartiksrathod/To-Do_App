@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "@/App.css";
-import { Plus, Trash2, GripVertical, Check, Search, Filter, MoreVertical, Calendar, AlertCircle, Edit2, X, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, GripVertical, Check, Search, MoreVertical, Calendar, AlertCircle, Edit2, X, CheckCircle2, Moon, Sun, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ import {
 import { format } from "date-fns";
 
 const STORAGE_KEY = "todo_tasks";
+const THEME_KEY = "todo_theme";
 
 const CATEGORIES = [
   { value: "work", label: "Work", color: "#3b82f6" },
@@ -45,10 +46,22 @@ function App() {
   const [newTaskDueDate, setNewTaskDueDate] = useState(null);
   const [draggedTask, setDraggedTask] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // all, active, completed
+  const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editingText, setEditingText] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
+  const [expandedTasks, setExpandedTasks] = useState(new Set());
+  const [newSubtaskText, setNewSubtaskText] = useState({});
+
+  // Load theme from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem(THEME_KEY);
+    if (savedTheme === "dark") {
+      setDarkMode(true);
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
 
   // Load tasks from localStorage on mount
   useEffect(() => {
@@ -74,17 +87,28 @@ function App() {
     filterTasks();
   }, [tasks, filter, searchQuery]);
 
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    if (newMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem(THEME_KEY, "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem(THEME_KEY, "light");
+    }
+    toast.success(`${newMode ? "Dark" : "Light"} mode activated`);
+  };
+
   const filterTasks = () => {
     let filtered = [...tasks];
 
-    // Apply status filter
     if (filter === "active") {
       filtered = filtered.filter(t => !t.completed);
     } else if (filter === "completed") {
       filtered = filtered.filter(t => t.completed);
     }
 
-    // Apply search query
     if (searchQuery.trim()) {
       filtered = filtered.filter(t => 
         t.text.toLowerCase().includes(searchQuery.toLowerCase())
@@ -107,6 +131,7 @@ function App() {
       priority: newTaskPriority,
       category: newTaskCategory,
       due_date: newTaskDueDate ? newTaskDueDate.toISOString() : null,
+      subtasks: [],
       order: tasks.length,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -173,6 +198,70 @@ function App() {
     toast.success("Priority updated");
   };
 
+  const toggleTaskExpanded = (taskId) => {
+    const newExpanded = new Set(expandedTasks);
+    if (newExpanded.has(taskId)) {
+      newExpanded.delete(taskId);
+    } else {
+      newExpanded.add(taskId);
+    }
+    setExpandedTasks(newExpanded);
+  };
+
+  const addSubtask = (taskId) => {
+    const subtaskText = newSubtaskText[taskId]?.trim();
+    if (!subtaskText) {
+      toast.error("Please enter a subtask");
+      return;
+    }
+
+    const newSubtask = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      text: subtaskText,
+      completed: false
+    };
+
+    setTasks(tasks.map(task => {
+      if (task.id === taskId) {
+        const updatedSubtasks = [...(task.subtasks || []), newSubtask];
+        return { ...task, subtasks: updatedSubtasks, updated_at: new Date().toISOString() };
+      }
+      return task;
+    }));
+
+    setNewSubtaskText({ ...newSubtaskText, [taskId]: "" });
+    toast.success("Subtask added!");
+  };
+
+  const toggleSubtask = (taskId, subtaskId) => {
+    setTasks(tasks.map(task => {
+      if (task.id === taskId) {
+        const updatedSubtasks = task.subtasks.map(st => 
+          st.id === subtaskId ? { ...st, completed: !st.completed } : st
+        );
+        return { ...task, subtasks: updatedSubtasks, updated_at: new Date().toISOString() };
+      }
+      return task;
+    }));
+  };
+
+  const deleteSubtask = (taskId, subtaskId) => {
+    setTasks(tasks.map(task => {
+      if (task.id === taskId) {
+        const updatedSubtasks = task.subtasks.filter(st => st.id !== subtaskId);
+        return { ...task, subtasks: updatedSubtasks, updated_at: new Date().toISOString() };
+      }
+      return task;
+    }));
+    toast.success("Subtask deleted");
+  };
+
+  const getSubtaskProgress = (subtasks) => {
+    if (!subtasks || subtasks.length === 0) return null;
+    const completed = subtasks.filter(st => st.completed).length;
+    return { completed, total: subtasks.length };
+  };
+
   const handleDragStart = (e, task) => {
     setDraggedTask(task);
     e.dataTransfer.effectAllowed = "move";
@@ -198,7 +287,6 @@ function App() {
     newTasks.splice(draggedIndex, 1);
     newTasks.splice(targetIndex, 0, draggedTask);
 
-    // Update order property for all tasks
     const reorderedTasks = newTasks.map((task, index) => ({
       ...task,
       order: index,
@@ -250,29 +338,40 @@ function App() {
                 <p className="subtitle">Organize, prioritize, and achieve your goals</p>
               </div>
               
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="more-button" data-testid="more-actions-button">
-                    <MoreVertical size={20} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" data-testid="more-actions-menu">
-                  <DropdownMenuItem onClick={markAllComplete} data-testid="mark-all-complete">
-                    <CheckCircle2 className="mr-2" size={16} />
-                    Mark All Complete
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={clearCompleted} data-testid="clear-completed">
-                    <Trash2 className="mr-2" size={16} />
-                    Clear Completed
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem disabled>
-                    <div className="keyboard-hint">
-                      <kbd>Enter</kbd> to add task
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="header-actions">
+                <Button 
+                  variant="outline" 
+                  className="theme-toggle" 
+                  onClick={toggleDarkMode}
+                  data-testid="theme-toggle"
+                >
+                  {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+                </Button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="more-button" data-testid="more-actions-button">
+                      <MoreVertical size={20} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" data-testid="more-actions-menu">
+                    <DropdownMenuItem onClick={markAllComplete} data-testid="mark-all-complete">
+                      <CheckCircle2 className="mr-2" size={16} />
+                      Mark All Complete
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={clearCompleted} data-testid="clear-completed">
+                      <Trash2 className="mr-2" size={16} />
+                      Clear Completed
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem disabled>
+                      <div className="keyboard-hint">
+                        <kbd>Enter</kbd> to add task
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
 
@@ -405,119 +504,198 @@ function App() {
               </div>
             ) : (
               <div className="task-list" data-testid="task-list">
-                {filteredTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    draggable={!editingTaskId}
-                    onDragStart={(e) => handleDragStart(e, task)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, task)}
-                    className={`task-item priority-${task.priority} ${task.completed ? 'completed' : ''} ${draggedTask?.id === task.id ? 'dragging' : ''}`}
-                    data-testid={`task-item-${task.id}`}
-                  >
-                    <div 
-                      className="priority-indicator" 
-                      style={{ background: getPriorityColor(task.priority) }}
-                      data-testid={`priority-indicator-${task.id}`}
-                    ></div>
-                    
-                    <div className="drag-handle" data-testid={`drag-handle-${task.id}`}>
-                      <GripVertical size={20} />
-                    </div>
-                    
-                    <Checkbox
-                      checked={task.completed}
-                      onCheckedChange={() => toggleTask(task.id, task.completed)}
-                      className="task-checkbox"
-                      data-testid={`task-checkbox-${task.id}`}
-                    />
-                    
-                    <div className="task-content">
-                      {editingTaskId === task.id ? (
-                        <div className="task-edit-wrapper">
-                          <input
-                            type="text"
-                            value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') saveEdit(task.id);
-                              if (e.key === 'Escape') cancelEdit();
-                            }}
-                            className="task-edit-input"
-                            autoFocus
-                            data-testid={`task-edit-input-${task.id}`}
-                          />
-                          <div className="edit-actions">
-                            <button onClick={() => saveEdit(task.id)} className="save-btn" data-testid={`save-edit-${task.id}`}>
-                              <Check size={16} />
+                {filteredTasks.map((task) => {
+                  const isExpanded = expandedTasks.has(task.id);
+                  const progress = getSubtaskProgress(task.subtasks);
+                  
+                  return (
+                    <div key={task.id} className="task-wrapper">
+                      <div
+                        draggable={!editingTaskId}
+                        onDragStart={(e) => handleDragStart(e, task)}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, task)}
+                        className={`task-item priority-${task.priority} ${task.completed ? 'completed' : ''} ${draggedTask?.id === task.id ? 'dragging' : ''}`}
+                        data-testid={`task-item-${task.id}`}
+                      >
+                        <div 
+                          className="priority-indicator" 
+                          style={{ background: getPriorityColor(task.priority) }}
+                          data-testid={`priority-indicator-${task.id}`}
+                        ></div>
+                        
+                        <div className="drag-handle" data-testid={`drag-handle-${task.id}`}>
+                          <GripVertical size={20} />
+                        </div>
+                        
+                        <Checkbox
+                          checked={task.completed}
+                          onCheckedChange={() => toggleTask(task.id, task.completed)}
+                          className="task-checkbox"
+                          data-testid={`task-checkbox-${task.id}`}
+                        />
+                        
+                        <div className="task-content">
+                          {editingTaskId === task.id ? (
+                            <div className="task-edit-wrapper">
+                              <input
+                                type="text"
+                                value={editingText}
+                                onChange={(e) => setEditingText(e.target.value)}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') saveEdit(task.id);
+                                  if (e.key === 'Escape') cancelEdit();
+                                }}
+                                className="task-edit-input"
+                                autoFocus
+                                data-testid={`task-edit-input-${task.id}`}
+                              />
+                              <div className="edit-actions">
+                                <button onClick={() => saveEdit(task.id)} className="save-btn" data-testid={`save-edit-${task.id}`}>
+                                  <Check size={16} />
+                                </button>
+                                <button onClick={cancelEdit} className="cancel-btn" data-testid={`cancel-edit-${task.id}`}>
+                                  <X size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="task-main">
+                                <span className="task-text" data-testid={`task-text-${task.id}`}>
+                                  {task.text}
+                                </span>
+                                <button 
+                                  onClick={() => startEdit(task)} 
+                                  className="edit-button"
+                                  data-testid={`edit-task-${task.id}`}
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                              </div>
+                              
+                              <div className="task-meta">
+                                {task.category && (
+                                  <span 
+                                    className="task-category" 
+                                    style={{ background: `${getCategoryColor(task.category)}20`, color: getCategoryColor(task.category) }}
+                                    data-testid={`task-category-${task.id}`}
+                                  >
+                                    {CATEGORIES.find(c => c.value === task.category)?.label}
+                                  </span>
+                                )}
+                                {task.due_date && (
+                                  <span 
+                                    className={`task-due-date ${isOverdue(task.due_date) ? 'overdue' : ''}`}
+                                    data-testid={`task-due-date-${task.id}`}
+                                  >
+                                    {isOverdue(task.due_date) && <AlertCircle size={12} />}
+                                    <Calendar size={12} />
+                                    {format(new Date(task.due_date), "MMM d")}
+                                  </span>
+                                )}
+                                {progress && (
+                                  <span className="subtask-progress" data-testid={`subtask-progress-${task.id}`}>
+                                    <CheckCircle2 size={12} />
+                                    {progress.completed}/{progress.total}
+                                  </span>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        
+                        <div className="task-actions">
+                          {(task.subtasks && task.subtasks.length > 0) || isExpanded ? (
+                            <button
+                              onClick={() => toggleTaskExpanded(task.id)}
+                              className="expand-button"
+                              data-testid={`expand-task-${task.id}`}
+                            >
+                              {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                             </button>
-                            <button onClick={cancelEdit} className="cancel-btn" data-testid={`cancel-edit-${task.id}`}>
-                              <X size={16} />
+                          ) : (
+                            <button
+                              onClick={() => toggleTaskExpanded(task.id)}
+                              className="add-subtask-button"
+                              data-testid={`add-subtask-btn-${task.id}`}
+                              title="Add subtask"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          )}
+                          
+                          <Select value={task.priority} onValueChange={(v) => updateTaskPriority(task.id, v)}>
+                            <SelectTrigger className="priority-badge" data-testid={`task-priority-select-${task.id}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="high">🔴 High</SelectItem>
+                              <SelectItem value="medium">🟡 Medium</SelectItem>
+                              <SelectItem value="low">🟢 Low</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          
+                          <button
+                            onClick={() => deleteTask(task.id)}
+                            className="delete-button"
+                            data-testid={`delete-task-${task.id}`}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {isExpanded && (
+                        <div className="subtasks-section" data-testid={`subtasks-section-${task.id}`}>
+                          <div className="subtasks-list">
+                            {task.subtasks && task.subtasks.map((subtask) => (
+                              <div key={subtask.id} className="subtask-item" data-testid={`subtask-${subtask.id}`}>
+                                <Checkbox
+                                  checked={subtask.completed}
+                                  onCheckedChange={() => toggleSubtask(task.id, subtask.id)}
+                                  className="subtask-checkbox"
+                                  data-testid={`subtask-checkbox-${subtask.id}`}
+                                />
+                                <span className={`subtask-text ${subtask.completed ? 'completed' : ''}`}>
+                                  {subtask.text}
+                                </span>
+                                <button
+                                  onClick={() => deleteSubtask(task.id, subtask.id)}
+                                  className="subtask-delete"
+                                  data-testid={`delete-subtask-${subtask.id}`}
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="add-subtask-input">
+                            <input
+                              type="text"
+                              value={newSubtaskText[task.id] || ""}
+                              onChange={(e) => setNewSubtaskText({ ...newSubtaskText, [task.id]: e.target.value })}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') addSubtask(task.id);
+                              }}
+                              placeholder="Add a subtask..."
+                              className="subtask-input"
+                              data-testid={`subtask-input-${task.id}`}
+                            />
+                            <button
+                              onClick={() => addSubtask(task.id)}
+                              className="subtask-add-btn"
+                              data-testid={`add-subtask-${task.id}`}
+                            >
+                              <Plus size={16} />
                             </button>
                           </div>
                         </div>
-                      ) : (
-                        <>
-                          <div className="task-main">
-                            <span className="task-text" data-testid={`task-text-${task.id}`}>
-                              {task.text}
-                            </span>
-                            <button 
-                              onClick={() => startEdit(task)} 
-                              className="edit-button"
-                              data-testid={`edit-task-${task.id}`}
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                          </div>
-                          
-                          <div className="task-meta">
-                            {task.category && (
-                              <span 
-                                className="task-category" 
-                                style={{ background: `${getCategoryColor(task.category)}20`, color: getCategoryColor(task.category) }}
-                                data-testid={`task-category-${task.id}`}
-                              >
-                                {CATEGORIES.find(c => c.value === task.category)?.label}
-                              </span>
-                            )}
-                            {task.due_date && (
-                              <span 
-                                className={`task-due-date ${isOverdue(task.due_date) ? 'overdue' : ''}`}
-                                data-testid={`task-due-date-${task.id}`}
-                              >
-                                {isOverdue(task.due_date) && <AlertCircle size={12} />}
-                                <Calendar size={12} />
-                                {format(new Date(task.due_date), "MMM d")}
-                              </span>
-                            )}
-                          </div>
-                        </>
                       )}
                     </div>
-                    
-                    <div className="task-actions">
-                      <Select value={task.priority} onValueChange={(v) => updateTaskPriority(task.id, v)}>
-                        <SelectTrigger className="priority-badge" data-testid={`task-priority-select-${task.id}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="high">🔴 High</SelectItem>
-                          <SelectItem value="medium">🟡 Medium</SelectItem>
-                          <SelectItem value="low">🟢 Low</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      
-                      <button
-                        onClick={() => deleteTask(task.id)}
-                        className="delete-button"
-                        data-testid={`delete-task-${task.id}`}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
