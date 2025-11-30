@@ -60,53 +60,14 @@ git clone https://github.com/yourusername/todo-app.git
 cd todo-app
 ```
 
-### 2. Backend Setup
+### 2. Install Dependencies
 
 ```bash
-# Navigate to backend directory
-cd backend
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Create .env file
-cp .env.example .env
-# Edit .env and add your MongoDB connection string
-```
-
-**Backend .env Configuration:**
-```env
-MONGO_URL=mongodb://localhost:27017/
-DB_NAME=todo_app
-CORS_ORIGINS=http://localhost:3000
-```
-
-### 3. Frontend Setup
-
-```bash
-# Navigate to frontend directory (from project root)
+# Navigate to frontend directory
 cd frontend
 
 # Install dependencies
 yarn install
-
-# Create .env file
-cp .env.example .env
-# Edit .env if needed
-```
-
-**Frontend .env Configuration:**
-```env
-REACT_APP_BACKEND_URL=http://localhost:8001/api
 ```
 
 ## 🏃 Running the Application
