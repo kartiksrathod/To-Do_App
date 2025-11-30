@@ -101,3 +101,4 @@ chainlit.md
 # Emergent platform files (if using Emergent for deployment)
 .emergent/
 test_result.md
+CONVERSION_SUMMARY.md
