@@ -32,21 +32,17 @@ A modern, feature-rich task management application built with React and localSto
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **React 18** - Modern UI framework
+- **React 19** - Modern UI framework with latest features
 - **Tailwind CSS** - Utility-first styling
 - **Lucide Icons** - Beautiful, consistent icons
 - **shadcn/ui** - High-quality component library
 - **date-fns** - Date formatting and manipulation
 - **Sonner** - Toast notifications
 
-### Backend
-- **FastAPI** - High-performance Python web framework
-- **Motor** - Async MongoDB driver
-- **Pydantic** - Data validation
-- **CORS Middleware** - Cross-origin support
-
-### Database
-- **MongoDB** - NoSQL database for flexible data storage
+### Storage
+- **localStorage** - Browser-based storage for tasks
+- **Automatic persistence** - All changes saved instantly
+- **No backend required** - Simple and fast
 
 ## 📋 Prerequisites
 
